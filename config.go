@@ -7,6 +7,7 @@ const (
 
 var defaultConfig = Config{
 	evictType: EvictLru,
+	size: 3,
 }
 
 
@@ -24,4 +25,8 @@ func WithLru() ConfigOption {
 	}
 }
 
-
+type DConfig struct {
+	Config
+	addr      string
+	peerAddrs []string
+}

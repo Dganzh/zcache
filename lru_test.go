@@ -5,7 +5,7 @@ import (
 )
 
 func TestLRU(t *testing.T) {
-	cache := newLRUCache()
+	cache := newLRUCache(&defaultConfig)
 	v := cache.Get("a")
 	if v != nil {
 		t.Errorf("Get non-nil value from a: %+v", v)

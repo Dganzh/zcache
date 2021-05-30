@@ -12,21 +12,18 @@ type LCache struct {
 }
 
 
-func NewLCache(opts ...ConfigOption) *LCache {
-	cfg := &Config{}
+func NewCache(opts ...ConfigOption) Cache {
+	cfg := defaultConfig
 	for _, o := range opts {
-		o(cfg)
+		o(&cfg)
 	}
 	var cache Cache
 	switch cfg.evictType {
 	case EvictLru:
-		cache = newLRUCache()
+		cache = newLRUCache(&cfg)
 	default:
 		panic("zcache: Unknown evict type " + cfg.evictType)
 	}
-	return &LCache{
-		cache: cache,
-		config: cfg,
-	}
+	return cache
 }
 

@@ -111,11 +111,11 @@ type LRUCache struct {
 	limitSize int64			// list len
 }
 
-func newLRUCache() *LRUCache {
+func newLRUCache(cfg *Config) *LRUCache {
 	return &LRUCache{
 		list: newList(),
 		items: map[string]*Item{},
-		limitSize: 3,
+		limitSize: cfg.size,
 	}
 }
 

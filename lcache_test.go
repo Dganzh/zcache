@@ -6,9 +6,11 @@ import (
 )
 
 func TestLCache(t *testing.T) {
-	cache := NewLCache()
+	cache := NewCache(
+		WithLru(),
+	)
 	fmt.Println(cache)
-
+	cache.Get("a")
 }
 
 

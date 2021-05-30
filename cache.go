@@ -17,8 +17,9 @@ type DCache interface {
 
 
 // 同步其他节点接口
-// 目前，只考虑缓存失效的同步
+// 目前，只考虑缓存失效才广播
 type Syncer interface {
 	SyncDel(string)
+	SyncHandler(*string, *interface{})
 }
 
