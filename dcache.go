@@ -11,13 +11,12 @@ import (
 	"time"
 )
 
-
 type RpcDCache struct {
-	cache Cache
-	server *zrpc.Server
-	peers []*zrpc.Client
+	cache   Cache
+	server  *zrpc.Server
+	peers   []*zrpc.Client
 	sendChs []chan *string
-	recvCh chan string
+	recvCh  chan string
 }
 
 
@@ -26,7 +25,7 @@ func NewDCache(addr string, peers []string, opts ...ConfigOption) DCache {
 	chs := make([]chan *string, len(peers))
 	for i := 0; i < len(peers); i++ {
 		clients[i] = zrpc.NewClient(peers[i])
-		chs[i] = make(chan *string, 100)
+		chs[i] = make(chan *string, 1000)
 	}
 	server := zrpc.NewServer(addr)
 	r := &RpcDCache{
@@ -40,6 +39,11 @@ func NewDCache(addr string, peers []string, opts ...ConfigOption) DCache {
 	go server.Start()
 	return r
 }
+
+func (c *RpcDCache) Exit() {
+	//c.server.Stop()
+}
+
 
 func (c *RpcDCache) Get(key string) interface{} {
 	return c.cache.Get(key)
@@ -71,7 +75,7 @@ func (c *RpcDCache) sendPeerSyncReq(idx int) {
 	sendSize := 100
 	retryTimes := 3
 	shouldSend := false
-	var toSend []string
+	toSend := make([]string, 0, sendSize)
 	sendCh := c.sendChs[idx]
 	peer := c.peers[idx]
 	ticker := time.NewTicker(100 * time.Millisecond)
@@ -90,6 +94,7 @@ func (c *RpcDCache) sendPeerSyncReq(idx int) {
 					break
 				}
 			}
+			toSend = toSend[:0]
 			//shouldSend = false
 		}
 	}

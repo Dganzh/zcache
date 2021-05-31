@@ -25,6 +25,13 @@ func WithLru() ConfigOption {
 	}
 }
 
+func WithSize(size int64) ConfigOption {
+	return func(cfg *Config) {
+		cfg.size = size
+	}
+}
+
+
 type DConfig struct {
 	Config
 	addr      string
