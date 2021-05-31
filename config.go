@@ -7,7 +7,7 @@ const (
 
 var defaultConfig = Config{
 	evictType: EvictLru,
-	size: 3,
+	size: 100,
 }
 
 

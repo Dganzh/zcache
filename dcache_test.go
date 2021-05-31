@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+var c1 DCache
+var c2 DCache
+var c3 DCache
+var keys = make([]string, 200)
+
 
 func randString(n int) string {
 	b := make([]byte, 2*n)
@@ -18,25 +23,9 @@ func randString(n int) string {
 }
 
 
-func testDCache(t *testing.T) {
-	c1:= NewDCache(
-		"localhost:5205",
-		[]string{"localhost:5206", "localhost:5207"},
-		WithLru(),
-	)
-	c2:= NewDCache(
-		"localhost:5206",
-		[]string{"localhost:5205", "localhost:5207"},
-		WithLru(),
-	)
-	c3:= NewDCache(
-		"localhost:5207",
-		[]string{"localhost:5205", "localhost:5206"},
-		WithLru(),
-	)
+func TestDCache(t *testing.T) {
 	// wait service start
 	time.Sleep(2 * time.Second)
-	fmt.Println(c1, c2)
 	c1.Set("a", 1)
 	c2.Set("a", 2)
 	c3.Set("a", 2)
@@ -51,24 +40,21 @@ func testDCache(t *testing.T) {
 	fmt.Println("c3 Get(a) after sleep", c3.Get("a"))
 }
 
-var c1 DCache
-var keys = make([]string, 200)
-
 func init() {
 	c1 = NewDCache(
 		"localhost:5205",
-		[]string{"localhost:5206", "localhost:5208"},
+		[]string{"localhost:5206", "localhost:5207"},
 		WithLru(),
 		WithSize(1000),
 	)
-	c2:= NewDCache(
+	c2 = NewDCache(
 		"localhost:5206",
-		[]string{"localhost:5205", "localhost:5208"},
+		[]string{"localhost:5205", "localhost:5207"},
 		WithLru(),
 		WithSize(1000),
 	)
-	c3:= NewDCache(
-		"localhost:5208",
+	c3 = NewDCache(
+		"localhost:5207",
 		[]string{"localhost:5205", "localhost:5206"},
 		WithLru(),
 		WithSize(1000),
@@ -95,7 +81,6 @@ func BenchmarkCacheSet(b *testing.B) {
 }
 
 func TestCost(t *testing.T) {
-	fmt.Println("<+++++++++++++++>")
 	v := randString(10000)
 	N := 100000
 	start := time.Now()
