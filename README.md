@@ -78,3 +78,7 @@ On server1:
 c1.Get("a") == nil
 ```
 
+
+#### TODO
+- add expire
+- add evict type(LFU\FIFO)
