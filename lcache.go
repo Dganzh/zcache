@@ -1,16 +1,13 @@
 package zcache
+
 /*
 local cache
 实现基本的本地缓存
  */
 
-
 type LCache struct {
-	cache Cache
-	config *Config
-
+	loadGroup *Group
 }
-
 
 func NewCache(opts ...ConfigOption) Cache {
 	cfg := defaultConfig

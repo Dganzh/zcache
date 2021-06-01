@@ -40,7 +40,7 @@ func TestDCache(t *testing.T) {
 	fmt.Println("c3 Get(a) after sleep", c3.Get("a"))
 }
 
-func init() {
+func init2() {
 	c1 = NewDCache(
 		"localhost:5205",
 		[]string{"localhost:5206", "localhost:5207"},

@@ -6,6 +6,7 @@ type Cache interface {
 	Set(string, interface{})
 	Get(string) interface{}
 	Del(string)
+	Load(string, func()(interface{}, error)) (interface{}, error)
 }
 
 

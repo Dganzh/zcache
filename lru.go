@@ -42,7 +42,6 @@ func (l *List) transferTail() *Item {
 	return l.transfer(l.head.prev)
 }
 
-
 func (l *List) isTail(i *Item) bool {
 	return l.head.prev == i
 }
@@ -102,7 +101,9 @@ func (i *Item) isInvalid() bool {
 	return i.prev == nil || i.next == nil		// and expired?
 }
 
+
 type LRUCache struct {
+	LCache
 	mu sync.RWMutex
 	list   	  *List
 	items     map[string]*Item
@@ -112,13 +113,14 @@ type LRUCache struct {
 }
 
 func newLRUCache(cfg *Config) *LRUCache {
-	return &LRUCache{
+	c := &LRUCache{
 		list: newList(),
 		items: map[string]*Item{},
 		limitSize: cfg.size,
 	}
+	c.loadGroup = &Group{}
+	return c
 }
-
 
 func (c *LRUCache) Get(key string) interface{} {
 	c.mu.Lock()
@@ -159,12 +161,29 @@ func (c *LRUCache) Del(key string) {
 	}
 }
 
-
-func (c *LRUCache) clearInvalid() {
-	if len(c.items) <= c.list.len {
-		return
+func (c *LRUCache) Load(key string, loader func() (interface{}, error)) (interface{}, error) {
+	v := c.Get(key)
+	if v != nil {
+		return v, nil
 	}
-
+	value, err := c.load(key, loader)
+	return value, err
 }
 
+func (c *LRUCache) LoadNoWait(key string, loader func() (interface{}, error)) (interface{}, error) {
+	return nil, nil
+}
+
+// loader: get data from source
+func (c *LRUCache) load(key string, loader func() (interface{}, error)) (interface{}, error) {
+	value, err := c.loadGroup.Do(key, func() (interface{}, error) {
+		v, err := loader()
+		if err != nil {
+			return nil, err
+		}
+		c.Set(key, v)
+		return v, nil
+	})
+	return value, err
+}
 

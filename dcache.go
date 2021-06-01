@@ -44,7 +44,6 @@ func (c *RpcDCache) Exit() {
 	//c.server.Stop()
 }
 
-
 func (c *RpcDCache) Get(key string) interface{} {
 	return c.cache.Get(key)
 }
@@ -58,6 +57,10 @@ func (c *RpcDCache) Del(key string) {
 	c.SyncDel(key)
 }
 
+func (c *RpcDCache) Load(key string, loader func() (interface{}, error)) (interface{}, error) {
+	return c.cache.Load(key, loader)
+}
+
 func (c *RpcDCache) SyncDel(key string) {
 	for i := 0; i < len(c.sendChs); i++ {
 		c.sendChs[i] <- &key
@@ -69,7 +72,6 @@ func (c *RpcDCache) sendSyncReq() {
 		go c.sendPeerSyncReq(idx)
 	}
 }
-
 
 func (c *RpcDCache) sendPeerSyncReq(idx int) {
 	sendSize := 100
@@ -100,10 +102,8 @@ func (c *RpcDCache) sendPeerSyncReq(idx int) {
 	}
 }
 
-
 func (c *RpcDCache) SyncHandler(keys *string, reply *interface{}) {
 	for _, key := range strings.Split(*keys, "$$") {
 		c.cache.Del(key)
 	}
 }
-
