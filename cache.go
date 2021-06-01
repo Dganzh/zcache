@@ -7,6 +7,7 @@ type Cache interface {
 	Get(string) interface{}
 	Del(string)
 	Load(string, func()(interface{}, error)) (interface{}, error)
+	Keys() []string
 }
 
 

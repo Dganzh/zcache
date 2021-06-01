@@ -1,5 +1,6 @@
 package zcache
 
+import "time"
 
 const (
 	EvictLru = "lru"
@@ -17,6 +18,7 @@ type ConfigOption func(config *Config)
 type Config struct {
 	evictType string
 	size 	  int64
+	expire  *time.Duration
 }
 
 func WithLru() ConfigOption {
@@ -31,6 +33,11 @@ func WithSize(size int64) ConfigOption {
 	}
 }
 
+func WithExpire(exp *time.Duration) ConfigOption {
+	return func(cfg *Config) {
+		cfg.expire = exp
+	}
+}
 
 type DConfig struct {
 	Config

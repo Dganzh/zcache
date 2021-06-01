@@ -57,3 +57,32 @@ func TestLoad(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestExpire(t *testing.T) {
+	exp := 5 * time.Second
+	cfg := &Config{
+		evictType: EvictLru,
+		size: 3,
+		expire: &exp,
+	}
+	cache := newLRUCache(cfg)
+	cache.SetWithExpire("a", 123, 100 * time.Millisecond)
+	cache.SetWithExpire("b", 123, 100 * time.Millisecond)
+	cache.Set("c", 123)
+	fmt.Println(cache.Get("a") == 123)
+	time.Sleep(100 * time.Millisecond)
+	// Get 一个过期key会触发删除
+	fmt.Println(cache.Get("a") == nil)
+
+	// 这里只剩下b c
+	keys := cache.Keys()
+	fmt.Println("keys", keys, "len", len(keys))
+	// 确保触发周期删除过期key
+	time.Sleep(1 * time.Second)
+	keys = cache.Keys()
+	fmt.Println("after auto delete, keys:", keys, "len", len(keys))
+
+	fmt.Println(cache.Get("c") == 123)
+	time.Sleep(exp)
+	fmt.Println(cache.Get("c") == nil)
+}

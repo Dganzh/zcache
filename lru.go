@@ -2,6 +2,7 @@ package zcache
 
 import (
 	"sync"
+	"time"
 )
 
 type List struct {
@@ -93,12 +94,16 @@ func (l *List) transfer(i *Item) *Item {
 type Item struct {
 	key   string
 	value interface{}		// set(k, v) v will save in here
+	expire *time.Time
 	prev *Item
 	next *Item
 }
 
-func (i *Item) isInvalid() bool {
-	return i.prev == nil || i.next == nil		// and expired?
+func (i *Item) isExpired() bool {
+	if i.expire == nil {
+		return false
+	}
+	return i.expire.Before(time.Now())
 }
 
 
@@ -106,6 +111,7 @@ type LRUCache struct {
 	LCache
 	mu sync.RWMutex
 	list   	  *List
+	liveTime  *time.Duration
 	items     map[string]*Item
 	keySize   int64			// ignore
 	valueSize int64			// ignore
@@ -117,26 +123,39 @@ func newLRUCache(cfg *Config) *LRUCache {
 		list: newList(),
 		items: map[string]*Item{},
 		limitSize: cfg.size,
+		liveTime: cfg.expire,
 	}
 	c.loadGroup = &Group{}
+	c.StartClearTask()
 	return c
 }
 
 func (c *LRUCache) Get(key string) interface{} {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.get(key)
+}
+
+func (c *LRUCache) get(key string) interface{} {
 	item, ok := c.items[key]
 	if !ok {
+		return nil
+	}
+	if item.isExpired() {
+		delete(c.items, key)
+		c.list.remove(item)
 		return nil
 	}
 	c.list.transfer(item)
 	return item.value
 }
 
-func (c *LRUCache) Set(key string, value interface{}) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if item, ok := c.items[key]; ok {
+func (c *LRUCache) set(key string, value interface{}) *Item {
+	var (
+		item   *Item
+		exists bool
+	)
+	if item, exists = c.items[key]; exists {
 		item.value = value
 		c.list.transfer(item)
 	} else {
@@ -150,6 +169,28 @@ func (c *LRUCache) Set(key string, value interface{}) {
 		}
 		c.items[key] = item
 	}
+	return item
+}
+
+
+func (c *LRUCache) Set(key string, value interface{}) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	item := c.set(key, value)
+	if c.liveTime == nil {
+		item.expire = nil
+	} else {
+		t := time.Now().Add(*c.liveTime)
+		item.expire = &t
+	}
+}
+
+func (c *LRUCache) SetWithExpire(key string, value interface{}, expire time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	item := c.set(key, value)
+	t := time.Now().Add(expire)
+	item.expire = &t
 }
 
 func (c *LRUCache) Del(key string) {
@@ -162,7 +203,9 @@ func (c *LRUCache) Del(key string) {
 }
 
 func (c *LRUCache) Load(key string, loader func() (interface{}, error)) (interface{}, error) {
-	v := c.Get(key)
+	c.mu.Lock()
+	v := c.get(key)
+	c.mu.Unlock()
 	if v != nil {
 		return v, nil
 	}
@@ -187,3 +230,48 @@ func (c *LRUCache) load(key string, loader func() (interface{}, error)) (interfa
 	return value, err
 }
 
+func (c *LRUCache) Keys() []string {
+	keys := make([]string, 0, len(c.items))
+	c.mu.RLock()
+	for k, _ := range c.items {
+		keys = append(keys, k)
+	}
+	c.mu.RUnlock()
+	return keys
+}
+
+// 这里并不严格删除过期的
+func (c *LRUCache) clearExpired() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delNum := c.list.len
+	if delNum == 0 {
+		return
+	}
+	if delNum > 100 {
+		delNum = 100
+	}
+	var nt *Item
+	node := c.list.head.prev
+	for i := 0; i < delNum; i++ {
+		if !node.isExpired() {
+			return
+		}
+		nt = node.prev
+		c.list.remove(node)
+		delete(c.items, node.key)
+		node = nt
+	}
+}
+
+func (c *LRUCache) StartClearTask() {
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <- ticker.C :
+				c.clearExpired()
+			}
+		}
+	}()
+}

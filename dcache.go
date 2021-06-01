@@ -61,6 +61,10 @@ func (c *RpcDCache) Load(key string, loader func() (interface{}, error)) (interf
 	return c.cache.Load(key, loader)
 }
 
+func (c *RpcDCache) Keys() []string {
+	return c.cache.Keys()
+}
+
 func (c *RpcDCache) SyncDel(key string) {
 	for i := 0; i < len(c.sendChs); i++ {
 		c.sendChs[i] <- &key
