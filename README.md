@@ -85,3 +85,5 @@ c1.Get("a") == nil
 - add Load
 - single fly
 - add statics
+- 参考redis的LRU改进
+
